@@ -1,103 +1,126 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+interface Post {
+  _id: string;
+  title: string;
+  content: string;
+  author: {
+    username: string;
+  };
+  createdAt: string;
+  status: 'public' | 'private';
+}
+
+const PostCard = ({ post }: { post: Post }) => (
+    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+        <div className="p-6">
+            <div className="flex justify-between items-start mb-2">
+                <h3 className="text-xl font-bold text-white">{post.title}</h3>
+                {post.status && (
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${post.status === 'private' ? 'bg-purple-600/50 text-purple-300' : 'bg-green-600/50 text-green-300'}`}>
+                        {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                    </span>
+                )}
+            </div>
+            <p className="text-gray-400 mb-4 line-clamp-3">{post.content}</p>
+            <div className="border-t border-gray-700 pt-4 flex justify-between items-center text-sm text-gray-500">
+                <span>By <span className="font-medium text-cyan-400">{post.author.username}</span></span>
+                <Link href={`/posts/${post._id}`} className="text-blue-400 hover:text-blue-300 font-semibold">
+                    Read More &rarr;
+                </Link>
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
+);
+
+
+export default function HomePage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+      fetchPosts();
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/posts');
+      setPosts(response.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Could not fetch posts.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+            <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse"></div>
+                <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse [animation-delay:0.2s]"></div>
+                <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse [animation-delay:0.4s]"></div>
+                <span className="text-lg text-gray-400">Loading Content...</span>
+            </div>
+        </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen w-full bg-gray-900 text-white">
+       {isLoggedIn ? (
+        <div className="container mx-auto px-4 py-8 sm:py-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-center mb-10 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+            Community Feed
+          </h1>
+          {posts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map((post) => (
+                <PostCard key={post._id} post={post} />
+              ))}
+            </div>
+          ) : (
+             <div className="text-center py-16 px-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-lg">No public posts yet. Why not create one?</p>
+             </div>
+          )}
+        </div>
+      ) : (
+        <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden p-4">
+            <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-radial-gradient(circle, rgba(22, 163, 74, 0.2), transparent 60%)"></div>
+            <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-[50rem] h-[50rem] bg-radial-gradient(circle, rgba(37, 99, 235, 0.2), transparent 60%)"></div>
+
+            <div className="relative z-10 text-center">
+                <h1 className="text-5xl md:text-7xl font-extrabold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">
+                    Discover Nexus
+                </h1>
+                <p className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-gray-300">
+                    A modern platform to share your ideas, connect with others, and explore a universe of stories. Your next great discovery awaits.
+                </p>
+                <div className="mt-10 flex justify-center gap-4">
+                    <Link href="/login" className="px-8 py-4 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold text-lg shadow-lg hover:shadow-cyan-500/30 hover:scale-105 transform transition-all duration-300">
+                        Get Started
+                    </Link>
+                    <Link href="/signup" className="px-8 py-4 rounded-full bg-gray-700 text-gray-200 font-bold text-lg shadow-lg hover:bg-gray-600 hover:scale-105 transform transition-all duration-300">
+                        Sign Up
+                    </Link>
+                </div>
+            </div>
+        </div>
+      )}
+    </main>
   );
 }
