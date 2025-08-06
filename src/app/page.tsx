@@ -9,6 +9,7 @@ interface Post {
   _id: string;
   title: string;
   content: string;
+  imageUrl?: string;
   author: {
     username: string;
   };
@@ -17,8 +18,17 @@ interface Post {
 }
 
 const PostCard = ({ post }: { post: Post }) => (
-    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-        <div className="p-6">
+    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
+        {post.imageUrl && (
+            <div className="w-full h-48 overflow-hidden">
+                <img
+                    src={post.imageUrl}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                />
+            </div>
+        )}
+        <div className="p-6 flex-grow">
             <div className="flex justify-between items-start mb-2">
                 <h3 className="text-xl font-bold text-white">{post.title}</h3>
                 {post.status && (
@@ -27,13 +37,13 @@ const PostCard = ({ post }: { post: Post }) => (
                     </span>
                 )}
             </div>
-            <p className="text-gray-400 mb-4 line-clamp-3">{post.content}</p>
-            <div className="border-t border-gray-700 pt-4 flex justify-between items-center text-sm text-gray-500">
-                <span>By <span className="font-medium text-cyan-400">{post.author.username}</span></span>
-                <Link href={`/posts/${post._id}`} className="text-blue-400 hover:text-blue-300 font-semibold">
-                    Read More &rarr;
-                </Link>
-            </div>
+            <p className="text-gray-400 mb-4 line-clamp-2 text-sm">{post.content}</p>
+        </div>
+        <div className="border-t border-gray-700 mt-auto px-6 py-4 flex justify-between items-center text-sm text-gray-500">
+            <span>By <span className="font-medium text-cyan-400">{post.author.username}</span></span>
+            <Link href={`/posts/${post._id}`} className="text-blue-400 hover:text-blue-300 font-semibold">
+                Read More &rarr;
+            </Link>
         </div>
     </div>
 );

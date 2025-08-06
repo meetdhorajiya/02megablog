@@ -9,10 +9,14 @@ const postSchema = new mongoose.Schema({
   content: {
     type: String,
     required: [true, 'Please provide content'],
+  },  
+  imageUrl: {
+    type: String,
+    required: [true, 'Please provide an image URL'],
   },
   author: {
     type: Schema.Types.ObjectId,
-    ref: 'users', // This should match the model name given to mongoose.model()
+    ref: 'users',
     required: true,
   },
   status: {

@@ -5,17 +5,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 connect();
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest,{ params }: { params: { id: string } }) {
   try {
+    // No changes needed here, this was already correct
     const post = await Post.findById(params.id).populate('author', 'username _id');
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    
     if (post.status === 'private') {
       const userId = getDataFromToken(request);
-      
       if (!userId || post.author._id.toString() !== userId) {
         return NextResponse.json({ error: 'Access denied. This post is private.' }, { status: 403 });
       }
@@ -24,7 +23,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(post);
 
   } catch (error: any) {
-    
     return NextResponse.json({ error: 'Invalid Post ID or server error' }, { status: 500 });
   }
 }
@@ -45,11 +43,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'You are not authorized to edit this post' }, { status: 403 });
     }
 
-    const { title, content, status } = await request.json();
+    // ✅ CORRECTED: Added imageUrl here
+    const { title, content, status, imageUrl } = await request.json();
     const updatedPost = await Post.findByIdAndUpdate(
         params.id,
-        { title, content, status },
-        { new: true, runValidators: true } 
+        // ✅ CORRECTED: Pass imageUrl to the update
+        { title, content, status, imageUrl },
+        { new: true, runValidators: true }
     );
 
     return NextResponse.json({
